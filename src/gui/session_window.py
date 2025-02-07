@@ -10,6 +10,15 @@ class SessionWindow(ctk.CTkToplevel):
         self.geometry("600x800")
         self.minsize(500, 600)
         
+        # Configure main window grid
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        
+        # Create main scrollable container
+        self.main_scroll = ctk.CTkScrollableFrame(self)
+        self.main_scroll.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.main_scroll.grid_columnconfigure(0, weight=1)
+        
         # Store session data if editing
         self.editing_session = session
         
@@ -29,9 +38,9 @@ class SessionWindow(ctk.CTkToplevel):
         self.grab_set()  # Make window modal
     
     def setup_ui(self):
-        # Main container with grid
-        self.main_frame = ctk.CTkFrame(self)
-        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+        # Main container with grid (now inside scrollable frame)
+        self.main_frame = ctk.CTkFrame(self.main_scroll)
+        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(1, weight=1)  # Sets frame expands
         
