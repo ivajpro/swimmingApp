@@ -18,11 +18,22 @@ class Database:
     def save_session(self, session_data: dict) -> bool:
         """Save a new session to the database"""
         try:
+            # Read existing sessions
             sessions = self.get_sessions()
+            
+            # Add unique ID and timestamp
             session_data["id"] = len(sessions) + 1
+            session_data["created_at"] = datetime.now().isoformat()
+            
+            # Add new session
             sessions.append(session_data)
-            self.sessions_file.write_text(json.dumps(sessions, indent=2, default=str))
+            
+            # Save updated data
+            self.sessions_file.write_text(
+                json.dumps(sessions, indent=2, default=str)
+            )
             return True
+            
         except Exception as e:
             print(f"Error saving session: {e}")
             return False

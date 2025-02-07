@@ -18,6 +18,9 @@ class MainWindow(ctk.CTk):
         
         # Create main container
         self.setup_ui()
+        
+        # Load initial sessions
+        self.refresh_sessions_list()
     
     def setup_ui(self):
         # Main frame with grid
@@ -103,8 +106,9 @@ class MainWindow(ctk.CTk):
         self.refresh_sessions_list()  # Refresh after window closes
     
     def open_statistics(self):
-        # TODO: Implement statistics window
-        pass
+        from src.gui.stats_window import StatsWindow
+        stats_window = StatsWindow(self)
+        self.wait_window(stats_window)
 
     def refresh_sessions_list(self):
         """Update the sessions list display"""
@@ -117,15 +121,23 @@ class MainWindow(ctk.CTk):
         if not sessions:
             self.sessions_list.insert("1.0", "No recent sessions")
         else:
-            for session in reversed(sessions):  # Show most recent first
-                date = session["date"]
-                distance = session["total_distance"]
-                time = session["total_time"]
+            # Sort sessions by date, most recent first
+            sessions.sort(key=lambda x: x.get("date", ""), reverse=True)
+            
+            for session in sessions:
+                # Use get() method to provide defaults for missing keys
+                date = session.get("date", "No date")
+                total_distance = session.get("total_distance", 0)
+                total_time = session.get("total_time", 0)
+                pool_length = session.get("pool_length", 0)
                 
-                session_text = (f"Date: {date}\n"
-                              f"Distance: {distance}m\n"
-                              f"Time: {time}s\n"
-                              f"{'-' * 40}\n\n")
+                session_text = (
+                    f"Date: {date}\n"
+                    f"Pool Length: {pool_length}m\n"
+                    f"Total Distance: {total_distance}m\n"
+                    f"Total Time: {total_time}s\n"
+                    f"{'-' * 40}\n\n"
+                )
                 
                 self.sessions_list.insert("end", session_text)
         

@@ -158,46 +158,44 @@ class SessionWindow(ctk.CTkToplevel):
         self.update_sets_display()
     
     def save_session(self):
-        """Save the current session"""
+        """Save the current session data"""
         try:
-            # Validate inputs
-            date_str = self.date_entry.get()
-            if not date_str:
-                date_str = datetime.now().strftime("%Y-%m-%d")
-            
-            pool_length = int(self.pool_var.get().replace("m", ""))
-            
+            # Validate if there are any sets
             if not self.sets:
                 self._show_error("Please add at least one set")
                 return
             
+            # Get pool length (remove 'm' from the string)
+            pool_length = int(self.pool_var.get().replace('m', ''))
+            
             # Create session data
             session_data = {
-                "date": date_str,
+                "date": self.date_entry.get() or datetime.now().strftime("%Y-%m-%d"),
                 "pool_length": pool_length,
                 "sets": self.sets,
-                "notes": self.notes_text.get("1.0", "end-1c"),
                 "total_distance": sum(set_data["distance"] for set_data in self.sets),
                 "total_time": sum(set_data["time"] for set_data in self.sets),
+                "notes": self.notes_text.get("1.0", "end-1c").strip()
             }
             
             # Save to database
             db = Database()
             if db.save_session(session_data):
-                self.destroy()
+                self.destroy()  # Close window on successful save
             else:
                 self._show_error("Failed to save session")
                 
-        except ValueError as e:
-            self._show_error(str(e))
-    
+        except Exception as e:
+            self._show_error(f"Error saving session: {str(e)}")
+
     def _show_error(self, message: str):
-        """Show error message to user"""
+        """Display error message to user"""
         error_label = ctk.CTkLabel(
             self.main_frame,
             text=message,
-            text_color="red"
+            text_color="red",
+            font=("Helvetica", 12)
         )
-        error_label.pack(before=self.buttons_frame)
+        error_label.grid(row=5, column=0, pady=(0, 10))
         self.after(2000, error_label.destroy)
 
