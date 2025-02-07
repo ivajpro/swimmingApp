@@ -46,3 +46,30 @@ class Database:
             print(f"Error reading sessions: {e}")
             return []
 
+    def delete_session(self, session_id: int) -> bool:
+        """Delete a session by ID"""
+        try:
+            sessions = self.get_sessions()
+            sessions = [s for s in sessions if s.get('id') != session_id]
+            self.sessions_file.write_text(json.dumps(sessions, indent=2, default=str))
+            return True
+        except Exception as e:
+            print(f"Error deleting session: {e}")
+            return False
+
+    def update_session(self, session_data: dict) -> bool:
+        """Update an existing session"""
+        try:
+            sessions = self.get_sessions()
+            for i, session in enumerate(sessions):
+                if session.get('id') == session_data['id']:
+                    sessions[i] = session_data
+                    self.sessions_file.write_text(
+                        json.dumps(sessions, indent=2, default=str)
+                    )
+                    return True
+            return False
+        except Exception as e:
+            print(f"Error updating session: {e}")
+            return False
+

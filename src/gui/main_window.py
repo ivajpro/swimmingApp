@@ -132,27 +132,83 @@ class MainWindow(ctk.CTk):
         if not sessions:
             self.sessions_list.insert("1.0", "No recent sessions")
         else:
+            # Clear existing frame contents
+            self.sessions_list.pack_forget()
+            
+            # Create scrollable frame for sessions
+            self.sessions_container = ctk.CTkScrollableFrame(
+                self.sessions_frame,
+                fg_color="transparent"
+            )
+            self.sessions_container.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+            self.sessions_container.grid_columnconfigure(0, weight=1)
+            
             # Sort sessions by date, most recent first
             sessions.sort(key=lambda x: x.get("date", ""), reverse=True)
             
             for session in sessions:
-                # Use get() method to provide defaults for missing keys
-                date = session.get("date", "No date")
-                total_distance = session.get("total_distance", 0)
-                total_time = session.get("total_time", 0)
-                pool_length = session.get("pool_length", 0)
+                # Create frame for each session
+                session_frame = ctk.CTkFrame(self.sessions_container)
+                session_frame.grid(sticky="ew", pady=5, padx=5)
+                session_frame.grid_columnconfigure(0, weight=1)
                 
-                session_text = (
-                    f"Date: {date}\n"
-                    f"Pool Length: {pool_length}m\n"
-                    f"Total Distance: {total_distance}m\n"
-                    f"Total Time: {total_time}s\n"
-                    f"{'-' * 40}\n\n"
+                # Session info
+                info_text = (
+                    f"Date: {session.get('date', 'No date')}\n"
+                    f"Pool Length: {session.get('pool_length', 0)}m\n"
+                    f"Total Distance: {session.get('total_distance', 0)}m\n"
+                    f"Total Time: {session.get('total_time', 0)}s"
                 )
                 
-                self.sessions_list.insert("end", session_text)
+                info_label = ctk.CTkLabel(
+                    session_frame,
+                    text=info_text,
+                    font=("Helvetica", 14),
+                    justify="left"
+                )
+                info_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+                
+                # Buttons frame
+                buttons_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
+                buttons_frame.grid(row=0, column=1, padx=10, pady=5)
+                
+                # Edit button
+                edit_btn = ctk.CTkButton(
+                    buttons_frame,
+                    text="Edit",
+                    width=60,
+                    command=lambda s=session: self.edit_session(s)
+                )
+                edit_btn.grid(row=0, column=0, padx=5)
+                
+                # Delete button
+                delete_btn = ctk.CTkButton(
+                    buttons_frame,
+                    text="×",
+                    width=30,
+                    fg_color="red",
+                    hover_color="darkred",
+                    command=lambda s=session: self.delete_session(s)
+                )
+                delete_btn.grid(row=0, column=1, padx=5)
+
+    def edit_session(self, session):
+        """Open session for editing"""
+        edit_window = SessionWindow(self, session=session)
+        self.wait_window(edit_window)
+        self.refresh_sessions_list()
+
+    def delete_session(self, session):
+        """Delete a session"""
+        from tkinter import messagebox
         
-        self.sessions_list.configure(state="disabled")
+        if messagebox.askyesno(
+            "Delete Session",
+            "Are you sure you want to delete this session?"
+        ):
+            db = Database()
+            if db.delete_session(session['id']):
+                self.refresh_sessions_list()
 
     def export_data(self):
         """Export sessions data to CSV file"""

@@ -4,21 +4,28 @@ from .components.set_dialog import SetDialog
 from src.utils.database import Database
 
 class SessionWindow(ctk.CTkToplevel):
-    def __init__(self, parent):
+    def __init__(self, parent, session=None):
         super().__init__(parent)
-        self.title("New Swimming Session")
+        self.title("Edit Session" if session else "New Swimming Session")
         self.geometry("600x800")
-        self.minsize(500, 600)  # Set minimum size
+        self.minsize(500, 600)
         
-        # Configure grid
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        # Store session data if editing
+        self.editing_session = session
         
         # Initialize variables
-        self.sets = []
+        self.sets = session.get('sets', []) if session else []
         self.parent = parent
         
         self.setup_ui()
+        
+        # Fill form if editing
+        if session:
+            self.date_entry.insert(0, session.get('date', ''))
+            self.pool_var.set(f"{session.get('pool_length', 25)}m")
+            self.notes_text.insert("1.0", session.get('notes', ''))
+            self.update_sets_display()
+        
         self.grab_set()  # Make window modal
     
     def setup_ui(self):
@@ -158,7 +165,7 @@ class SessionWindow(ctk.CTkToplevel):
         self.update_sets_display()
     
     def save_session(self):
-        """Save the current session data"""
+        """Save new or update existing session"""
         try:
             # Validate if there are any sets
             if not self.sets:
@@ -180,7 +187,13 @@ class SessionWindow(ctk.CTkToplevel):
             
             # Save to database
             db = Database()
-            if db.save_session(session_data):
+            if self.editing_session:
+                session_data['id'] = self.editing_session['id']
+                success = db.update_session(session_data)
+            else:
+                success = db.save_session(session_data)
+            
+            if success:
                 self.destroy()  # Close window on successful save
             else:
                 self._show_error("Failed to save session")
