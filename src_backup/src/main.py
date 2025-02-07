@@ -1,11 +1,5 @@
-import sys
-import os
 import customtkinter as ctk
-
-# Add the project root directory to Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from src.gui.main_window import MainWindow
+from gui.main_window import MainWindow
 
 def main():
     # Initialize the app

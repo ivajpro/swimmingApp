@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from datetime import datetime
-from src.gui.session_window import SessionWindow  # Update to absolute import
+from gui.session_window import SessionWindow  # Update import path
 
 class MainWindow(ctk.CTk):
     def __init__(self):
