@@ -32,3 +32,16 @@ build/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Build system
+*.spec
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE specific
+*.code-workspace
+
+# Windows specific
+*.exe
