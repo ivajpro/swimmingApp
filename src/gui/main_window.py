@@ -53,7 +53,7 @@ class MainWindow(ctk.CTk):
         # Buttons frame
         self.buttons_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.buttons_frame.grid(row=1, column=0, sticky="ew", pady=20)
-        self.buttons_frame.grid_columnconfigure((0, 1, 2), weight=1)  # Equal space distribution
+        self.buttons_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)  # Equal space distribution
         
         # Add main buttons
         self.new_session_btn = ctk.CTkButton(
@@ -75,6 +75,17 @@ class MainWindow(ctk.CTk):
             command=self.open_statistics
         )
         self.view_stats_btn.grid(row=0, column=1, padx=10)
+        
+        # Add export button
+        self.export_btn = ctk.CTkButton(
+            self.buttons_frame,
+            text="Export Data",
+            font=("Helvetica", 14),
+            width=200,
+            height=40,
+            command=self.export_data
+        )
+        self.export_btn.grid(row=0, column=2, padx=10)
         
         # Sessions frame
         self.sessions_frame = ctk.CTkFrame(self.main_frame)
@@ -142,4 +153,61 @@ class MainWindow(ctk.CTk):
                 self.sessions_list.insert("end", session_text)
         
         self.sessions_list.configure(state="disabled")
+
+    def export_data(self):
+        """Export sessions data to CSV file"""
+        from tkinter import filedialog
+        import csv
+        from datetime import datetime
+        
+        # Get save file location
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialfile=f"swimming_sessions_{datetime.now().strftime('%Y%m%d')}"
+        )
+        
+        if filename:
+            try:
+                db = Database()
+                sessions = db.get_sessions()
+                
+                if not sessions:
+                    return
+                
+                # Sort sessions by date
+                sessions.sort(key=lambda x: x.get("date", ""), reverse=True)
+                
+                # Define CSV headers
+                fieldnames = [
+                    "date", "pool_length", "total_distance", 
+                    "total_time", "sets", "notes"
+                ]
+                
+                with open(filename, 'w', newline='', encoding='utf-8') as file:
+                    writer = csv.DictWriter(file, fieldnames=fieldnames)
+                    writer.writeheader()
+                    
+                    for session in sessions:
+                        # Clean up data for CSV export
+                        export_data = {
+                            "date": session.get("date", ""),
+                            "pool_length": session.get("pool_length", 0),
+                            "total_distance": session.get("total_distance", 0),
+                            "total_time": session.get("total_time", 0),
+                            "sets": str(session.get("sets", [])),
+                            "notes": session.get("notes", "").replace("\n", " ")
+                        }
+                        writer.writerow(export_data)
+                
+                # Show success message in sessions list
+                self.sessions_list.configure(state="normal")
+                self.sessions_list.insert("1.0", f"Data exported to {filename}\n{'-' * 40}\n\n")
+                self.sessions_list.configure(state="disabled")
+                
+            except Exception as e:
+                # Show error message in sessions list
+                self.sessions_list.configure(state="normal")
+                self.sessions_list.insert("1.0", f"Error exporting data: {str(e)}\n{'-' * 40}\n\n")
+                self.sessions_list.configure(state="disabled")
 
