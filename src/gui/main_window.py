@@ -7,60 +7,31 @@ class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         
-        # Configure window
+        # Initialize window properties
         self.title("Swimming Training Tracker")
-        self.geometry("1024x768")
-        self.minsize(800, 600)  # Set minimum window size
+        self.geometry("800x600")
         
-        # Configure grid
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        # Create main frame
+        self.main_frame = ctk.CTkFrame(self)
+        self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Create main container
+        # Setup UI components
         self.setup_ui()
         
-        # Load initial sessions
+        # Initialize sessions list
         self.refresh_sessions_list()
     
     def setup_ui(self):
-        # Main scrollable container
-        self.main_scroll = ctk.CTkScrollableFrame(self)
-        self.main_scroll.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-        self.main_scroll.grid_columnconfigure(0, weight=1)
+        """Setup all UI components"""
+        # Buttons frame with center alignment
+        self.buttons_frame = ctk.CTkFrame(self.main_frame)
+        self.buttons_frame.pack(fill="x", pady=10)
         
-        # Main frame with grid
-        self.main_frame = ctk.CTkFrame(self.main_scroll, fg_color="transparent")
-        self.main_frame.grid(row=0, column=0, sticky="nsew")
-        self.main_frame.grid_columnconfigure(0, weight=1)
-        self.main_frame.grid_rowconfigure(2, weight=1)  # Sessions frame expands
+        # Configure grid columns for centering
+        self.buttons_frame.grid_columnconfigure(0, weight=1)  # Left padding
+        self.buttons_frame.grid_columnconfigure(4, weight=1)  # Right padding
         
-        # Title frame
-        self.title_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.title_frame.grid(row=0, column=0, sticky="ew", pady=(0, 20))
-        self.title_frame.grid_columnconfigure(1, weight=1)  # Space between title and date
-        
-        # Title
-        self.title_label = ctk.CTkLabel(
-            self.title_frame,
-            text="Swimming Training Tracker",
-            font=("Helvetica", 24, "bold")
-        )
-        self.title_label.grid(row=0, column=0, padx=20)
-        
-        # Date display
-        self.date_label = ctk.CTkLabel(
-            self.title_frame,
-            text=datetime.now().strftime("%d %B %Y"),
-            font=("Helvetica", 16)
-        )
-        self.date_label.grid(row=0, column=2, padx=20)
-        
-        # Buttons frame
-        self.buttons_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.buttons_frame.grid(row=1, column=0, sticky="ew", pady=20)
-        self.buttons_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)  # Equal space distribution
-        
-        # Add main buttons
+        # Add new session button
         self.new_session_btn = ctk.CTkButton(
             self.buttons_frame,
             text="New Session",
@@ -69,17 +40,18 @@ class MainWindow(ctk.CTk):
             height=40,
             command=self.open_new_session
         )
-        self.new_session_btn.grid(row=0, column=0, padx=10)
+        self.new_session_btn.grid(row=0, column=1, padx=10, pady=10)
         
+        # Add view stats button
         self.view_stats_btn = ctk.CTkButton(
             self.buttons_frame,
-            text="View Statistics",
+            text="View Stats",
             font=("Helvetica", 14),
             width=200,
             height=40,
             command=self.open_statistics
         )
-        self.view_stats_btn.grid(row=0, column=1, padx=10)
+        self.view_stats_btn.grid(row=0, column=2, padx=10, pady=10)
         
         # Add export button
         self.export_btn = ctk.CTkButton(
@@ -90,13 +62,11 @@ class MainWindow(ctk.CTk):
             height=40,
             command=self.export_data
         )
-        self.export_btn.grid(row=0, column=2, padx=10)
+        self.export_btn.grid(row=0, column=3, padx=10, pady=10)
         
         # Sessions frame
         self.sessions_frame = ctk.CTkFrame(self.main_frame)
-        self.sessions_frame.grid(row=2, column=0, sticky="nsew", pady=20)
-        self.sessions_frame.grid_columnconfigure(0, weight=1)
-        self.sessions_frame.grid_rowconfigure(1, weight=1)  # Make list expandable
+        self.sessions_frame.pack(fill="both", expand=True, pady=20)
         
         # Sessions title
         self.sessions_label = ctk.CTkLabel(
@@ -104,17 +74,11 @@ class MainWindow(ctk.CTk):
             text="Recent Sessions",
             font=("Helvetica", 18, "bold")
         )
-        self.sessions_label.grid(row=0, column=0, pady=10)
+        self.sessions_label.pack(pady=10)
         
-        # Sessions list
-        self.sessions_list = ctk.CTkTextbox(
-            self.sessions_frame,
-            font=("Helvetica", 14),
-            wrap="none"
-        )
-        self.sessions_list.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
-        self.sessions_list.insert("1.0", "No recent sessions")
-        self.sessions_list.configure(state="disabled")
+        # Sessions container for scrollable content
+        self.sessions_container = ctk.CTkFrame(self.sessions_frame)
+        self.sessions_container.pack(fill="both", expand=True, padx=10, pady=10)
     
     def open_new_session(self):
         session_window = SessionWindow(self)
@@ -127,42 +91,38 @@ class MainWindow(ctk.CTk):
         self.wait_window(stats_window)
 
     def refresh_sessions_list(self):
-        """Update the sessions list display"""
-        self.sessions_list.configure(state="normal")
-        self.sessions_list.delete("1.0", "end")
+        """Refresh the sessions list display"""
+        # Clear existing sessions
+        for widget in self.sessions_container.winfo_children():
+            widget.destroy()
         
+        # Get sessions from database
         db = Database()
         sessions = db.get_sessions()
         
         if not sessions:
-            self.sessions_list.insert("1.0", "No recent sessions")
-            self.sessions_list.configure(state="disabled")
+            # Show message when no sessions exist
+            no_sessions_label = ctk.CTkLabel(
+                self.sessions_container,
+                text="No sessions yet. Click 'New Session' to add one.",
+                font=("Helvetica", 14)
+            )
+            no_sessions_label.pack(pady=20)
             return
         
-        # Sort sessions by date, most recent first
-        sessions.sort(key=lambda x: x.get("date", ""), reverse=True)
-        
+        # Display sessions
         for session in sessions:
-            # Create frame for each session
             session_frame = ctk.CTkFrame(self.sessions_container)
-            session_frame.grid(sticky="ew", pady=5, padx=5)
-            session_frame.grid_columnconfigure(0, weight=1)
+            session_frame.pack(fill="x", pady=5)
             
             # Session info
-            info_text = (
-                f"Date: {session.get('date', 'No date')}\n"
-                f"Pool Length: {session.get('pool_length', 0)}m\n"
-                f"Total Distance: {session.get('total_distance', 0)}m\n"
-                f"Total Time: {session.get('total_time', 0)}s"
-            )
-            
+            info_text = f"Date: {session['date']} - {session.get('description', 'No description')}"
             info_label = ctk.CTkLabel(
                 session_frame,
                 text=info_text,
-                font=("Helvetica", 14),
-                justify="left"
+                font=("Helvetica", 12)
             )
-            info_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+            info_label.grid(row=0, column=0, sticky="w", padx=10, pady=5)
             
             # Delete button
             delete_btn = ctk.CTkButton(
@@ -174,9 +134,11 @@ class MainWindow(ctk.CTk):
                 command=lambda sid=session.get('id'): self.delete_session(sid)
             )
             delete_btn.grid(row=0, column=1, padx=5, pady=5)
-        
-        self.sessions_list.configure(state="disabled")
-
+            
+            # Make session frame clickable for editing
+            session_frame.bind("<Button-1>", 
+                lambda e, s=session: self.edit_session(s))
+    
     def edit_session(self, session):
         """Open session for editing"""
         edit_window = SessionWindow(self, session=session)

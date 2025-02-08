@@ -3,9 +3,24 @@ import customtkinter as ctk
 class SetDialog(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.title("Add Swimming Set")
+        self.title("Add Set")
         self.geometry("400x600")
         self.minsize(300, 400)
+        
+        # Initialize variables
+        self.result = None
+        self.distance_var = ctk.StringVar(value="")
+        self.reps_var = ctk.StringVar(value="1")
+        self.strokes = ["freestyle", "backstroke", "breaststroke", "butterfly", "mix"]
+        self.stroke_var = ctk.StringVar(value=self.strokes[0])
+        
+        # Initialize mixed strokes
+        self.mixed_strokes = {
+            "freestyle": ctk.BooleanVar(value=False),
+            "backstroke": ctk.BooleanVar(value=False),
+            "breaststroke": ctk.BooleanVar(value=False),
+            "butterfly": ctk.BooleanVar(value=False)
+        }
         
         # Configure grid
         self.grid_columnconfigure(0, weight=1)
@@ -38,9 +53,6 @@ class SetDialog(ctk.CTkToplevel):
         )
         self.save_btn.grid(row=0, column=1, padx=5, pady=10)
         
-        # Initialize result
-        self.result = None
-        
         self.setup_ui()
         self.grab_set()
     
@@ -60,6 +72,7 @@ class SetDialog(ctk.CTkToplevel):
         
         self.reps_entry = ctk.CTkEntry(
             self.main_frame,
+            textvariable=self.reps_var,
             placeholder_text="Number of repetitions (e.g., 4)",
             width=120
         )
@@ -76,6 +89,7 @@ class SetDialog(ctk.CTkToplevel):
         
         self.distance_entry = ctk.CTkEntry(
             self.main_frame,
+            textvariable=self.distance_var,
             placeholder_text="Enter distance (required)"
         )
         self.distance_entry.grid(row=3, column=0, sticky="ew", padx=10, pady=(0, 15))
@@ -101,13 +115,22 @@ class SetDialog(ctk.CTkToplevel):
         )
         self.stroke_label.grid(row=6, column=0, sticky="w", padx=10, pady=(0, 5))
         
-        self.stroke_var = ctk.StringVar(value="freestyle")
-        self.stroke_selector = ctk.CTkSegmentedButton(
+        self.stroke_selector = ctk.CTkOptionMenu(
             self.main_frame,
-            values=["freestyle", "backstroke", "breaststroke", "butterfly"],
-            variable=self.stroke_var
+            variable=self.stroke_var,
+            values=self.strokes,
+            command=self.on_stroke_change
         )
         self.stroke_selector.grid(row=7, column=0, sticky="ew", padx=10, pady=(0, 15))
+        
+        # Mixed strokes frame (initially hidden)
+        self.mix_frame = ctk.CTkFrame(self.main_frame)
+        for stroke, var in self.mixed_strokes.items():
+            ctk.CTkCheckBox(
+                self.mix_frame,
+                text=stroke.capitalize(),
+                variable=var
+            ).grid(sticky="w", padx=10, pady=2)
         
         # Rest interval (optional)
         self.rest_label = ctk.CTkLabel(
@@ -138,78 +161,50 @@ class SetDialog(ctk.CTkToplevel):
         )
         self.description_entry.grid(row=11, column=0, sticky="ew", padx=10, pady=(0, 15))
     
-    def validate_inputs(self) -> tuple[bool, str]:
-        """Validate all input fields"""
+    def on_stroke_change(self, choice):
+        if choice == "mix":
+            self.mix_frame.grid(row=12, column=0, sticky="ew", padx=10, pady=10)
+        else:
+            self.mix_frame.grid_forget()
+    
+    def get_result(self) -> dict:
+        """Get the set data with validation"""
         try:
-            # Validate repetitions
-            reps = int(self.reps_entry.get())
-            if reps <= 0:
-                return False, "Repetitions must be greater than 0"
+            distance = int(self.distance_var.get())
+            reps = int(self.reps_var.get())
             
-            # Validate distance
-            distance = int(self.distance_entry.get())
             if distance <= 0:
-                return False, "Distance must be greater than 0"
-            
-            # Validate time if provided
-            time_str = self.time_entry.get()
-            if time_str:
-                time = int(time_str)
-                if time <= 0:
-                    return False, "Time must be greater than 0"
-            
-            # Validate rest interval if provided
-            rest_str = self.rest_entry.get()
-            if rest_str:
-                rest = int(rest_str)
-                if rest < 0:
-                    return False, "Rest interval cannot be negative"
-            
-            return True, ""
-            
-        except ValueError:
-            return False, "Please enter valid numbers"
-
-    def save(self):
-        # Validate inputs before saving
-        is_valid, error_message = self.validate_inputs()
-        if not is_valid:
-            self._show_error(error_message)
-            return
-        
-        try:
-            # Get and validate repetitions
-            reps = int(self.reps_entry.get())
+                raise ValueError("Distance must be greater than 0")
             if reps <= 0:
-                self._show_error("Repetitions must be greater than 0")
-                return
-                
-            # Get and validate distance (per repetition)
-            distance = int(self.distance_entry.get())
-            if distance <= 0:
-                self._show_error("Distance must be greater than 0")
-                return
+                raise ValueError("Repetitions must be greater than 0")
             
-            # Get time (per repetition, optional)
-            time_str = self.time_entry.get()
-            time = int(time_str) if time_str else 0
-            
-            # Get rest interval (optional)
-            rest_str = self.rest_entry.get()
-            rest = int(rest_str) if rest_str else 0
-            
-            self.result = {
+            result = {
                 "distance": distance,
-                "time": time,
-                "stroke": self.stroke_var.get(),
                 "repetitions": reps,
-                "rest": rest,
-                "description": self.description_entry.get("1.0", "end-1c").strip()
+                "stroke": self.stroke_var.get()
             }
-            self.destroy()
             
-        except ValueError:
-            self._show_error("Please enter valid numbers")
+            if result["stroke"] == "mix":
+                selected_strokes = [
+                    stroke for stroke, var in self.mixed_strokes.items()
+                    if var.get()
+                ]
+                if not selected_strokes:
+                    raise ValueError("Please select at least one stroke for mix")
+                result["mixed_strokes"] = selected_strokes
+            
+            return result
+            
+        except ValueError as e:
+            raise ValueError(str(e))
+    
+    def save(self):
+        """Save button handler"""
+        try:
+            self.result = self.get_result()
+            self.destroy()
+        except ValueError as e:
+            self._show_error(str(e))
     
     def cancel(self):
         self.result = None
