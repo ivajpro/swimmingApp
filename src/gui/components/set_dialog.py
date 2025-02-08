@@ -138,7 +138,45 @@ class SetDialog(ctk.CTkToplevel):
         )
         self.description_entry.grid(row=11, column=0, sticky="ew", padx=10, pady=(0, 15))
     
+    def validate_inputs(self) -> tuple[bool, str]:
+        """Validate all input fields"""
+        try:
+            # Validate repetitions
+            reps = int(self.reps_entry.get())
+            if reps <= 0:
+                return False, "Repetitions must be greater than 0"
+            
+            # Validate distance
+            distance = int(self.distance_entry.get())
+            if distance <= 0:
+                return False, "Distance must be greater than 0"
+            
+            # Validate time if provided
+            time_str = self.time_entry.get()
+            if time_str:
+                time = int(time_str)
+                if time <= 0:
+                    return False, "Time must be greater than 0"
+            
+            # Validate rest interval if provided
+            rest_str = self.rest_entry.get()
+            if rest_str:
+                rest = int(rest_str)
+                if rest < 0:
+                    return False, "Rest interval cannot be negative"
+            
+            return True, ""
+            
+        except ValueError:
+            return False, "Please enter valid numbers"
+
     def save(self):
+        # Validate inputs before saving
+        is_valid, error_message = self.validate_inputs()
+        if not is_valid:
+            self._show_error(error_message)
+            return
+        
         try:
             # Get and validate repetitions
             reps = int(self.reps_entry.get())
