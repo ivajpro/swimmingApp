@@ -50,9 +50,14 @@ class Database:
         """Delete a session by ID"""
         try:
             sessions = self.get_sessions()
+            original_length = len(sessions)
             sessions = [s for s in sessions if s.get('id') != session_id]
-            self.sessions_file.write_text(json.dumps(sessions, indent=2, default=str))
-            return True
+            
+            # Only write if we actually removed a session
+            if len(sessions) < original_length:
+                self.sessions_file.write_text(json.dumps(sessions, indent=2, default=str))
+                return True
+            return False
         except Exception as e:
             print(f"Error deleting session: {e}")
             return False

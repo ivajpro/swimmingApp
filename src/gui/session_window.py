@@ -150,17 +150,42 @@ class SessionWindow(ctk.CTkToplevel):
             set_frame.grid(row=i-1, column=0, sticky="ew", padx=5, pady=2)
             set_frame.grid_columnconfigure(0, weight=1)
             
-            label_text = (f"Set {i}: {set_data['distance']}m "
-                         f"({set_data['stroke']}) - "
-                         f"{set_data['time']}s "
-                         f"Rest: {set_data['rest']}s")
+            # Main set info
+            reps = set_data.get('repetitions', 1)
+            distance = set_data['distance']
+            total_distance = distance * reps
+            
+            if reps > 1:
+                label_text = (f"Set {i}: {reps}x{distance}m "
+                             f"({set_data['stroke']}) - "
+                             f"Total: {total_distance}m")
+            else:
+                label_text = (f"Set {i}: {distance}m "
+                             f"({set_data['stroke']})")
+            
+            if set_data.get('time'):
+                label_text += f" - {set_data['time']}s"
+            if set_data.get('rest'):
+                label_text += f" Rest: {set_data['rest']}s"
             
             set_label = ctk.CTkLabel(
                 set_frame,
-                text=label_text
+                text=label_text,
+                font=("Helvetica", 14)
             )
-            set_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            set_label.grid(row=0, column=0, padx=5, pady=(5,0), sticky="w")
             
+            # Description if present
+            if set_data.get('description'):
+                desc_label = ctk.CTkLabel(
+                    set_frame,
+                    text=f"Note: {set_data['description']}",
+                    font=("Helvetica", 12, "italic"),
+                    text_color="gray"
+                )
+                desc_label.grid(row=1, column=0, padx=25, pady=(0,5), sticky="w")
+            
+            # Delete button
             delete_btn = ctk.CTkButton(
                 set_frame,
                 text="×",
@@ -184,13 +209,19 @@ class SessionWindow(ctk.CTkToplevel):
             # Get pool length (remove 'm' from the string)
             pool_length = int(self.pool_var.get().replace('m', ''))
             
-            # Create session data
+            # Create session data with correct total distance calculation
             session_data = {
                 "date": self.date_entry.get() or datetime.now().strftime("%Y-%m-%d"),
                 "pool_length": pool_length,
                 "sets": self.sets,
-                "total_distance": sum(set_data["distance"] for set_data in self.sets),
-                "total_time": sum(set_data["time"] for set_data in self.sets),
+                "total_distance": sum(
+                    set_data["distance"] * set_data.get("repetitions", 1) 
+                    for set_data in self.sets
+                ),
+                "total_time": sum(
+                    set_data["time"] * set_data.get("repetitions", 1) 
+                    for set_data in self.sets
+                ) if all(set_data.get("time") for set_data in self.sets) else 0,
                 "notes": self.notes_text.get("1.0", "end-1c").strip()
             }
             

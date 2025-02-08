@@ -7,22 +7,32 @@ class SwimmingSet:
     distance: int
     time: int
     stroke: str
+    repetitions: int = 1
     rest_interval: int = 0
+    description: str = ""
+    
+    @property
+    def total_distance(self) -> int:
+        return self.distance * self.repetitions
+    
+    @property
+    def total_time(self) -> int:
+        return self.time * self.repetitions
 
 @dataclass
 class Session:
     date: datetime
     pool_length: int
-    sets: List[SwimmingSet]
+    sets: List<SwimmingSet> # type: ignore
     notes: Optional[str] = None
     
     @property
     def total_distance(self) -> int:
-        return sum(s.distance for s in self.sets)
+        return sum(s.total_distance for s in self.sets)
     
     @property
     def total_time(self) -> int:
-        return sum(s.time for s in self.sets)
+        return sum(s.total_time for s in self.sets)
     
     @property
     def average_pace(self) -> float:
