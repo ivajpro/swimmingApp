@@ -43,24 +43,38 @@ class MainWindow(ctk.CTk):
 
     def setup_ui(self):
         """Setup enhanced UI components"""
-        # Buttons frame with modern styling
-        self.buttons_frame = ctk.CTkFrame(self.main_container)
+        # Buttons frame with modern styling and glass effect
+        self.buttons_frame = ctk.CTkFrame(
+            self.main_container,
+            fg_color=("gray85", "gray25"),
+            corner_radius=15
+        )
         self.buttons_frame.pack(fill="x", pady=(0, 20))
         
         # Grid configuration for centering
         self.buttons_frame.grid_columnconfigure((0, 4), weight=1)
         
-        # New Session Button with icon
+        # Enhanced button styles
+        button_hover_color = ("gray75", "gray35")
+        button_style = {
+            "font": ("Helvetica", 14, "bold"),
+            "width": 200,
+            "height": 45,
+            "corner_radius": 12,
+            "border_width": 2,
+            "border_color": ("gray70", "gray40"),
+            "hover_color": button_hover_color
+        }
+        
+        # New Session Button with enhanced styling
         self.new_session_btn = ctk.CTkButton(
             self.buttons_frame,
             text="➕ New Session",
-            font=("Helvetica", 14, "bold"),
-            width=200,
-            height=40,
-            corner_radius=10,
+            fg_color=("gray80", "gray30"),
+            **button_style,
             command=self.open_new_session
         )
-        self.new_session_btn.grid(row=0, column=1, padx=10, pady=10)
+        self.new_session_btn.grid(row=0, column=1, padx=15, pady=15)
         
         # Statistics Button with icon
         self.view_stats_btn = ctk.CTkButton(
@@ -156,33 +170,30 @@ class MainWindow(ctk.CTk):
         sessions = db.get_sessions()
         
         if not sessions:
-            no_sessions_frame = ctk.CTkFrame(
-                self.sessions_container,
-                fg_color="transparent"
-            )
-            no_sessions_frame.pack(fill="x", pady=20)
-            
-            ctk.CTkLabel(
-                no_sessions_frame,
-                text="🏊 No sessions yet",
-                font=("Helvetica", 16, "bold")
-            ).pack(pady=(0, 5))
-            
-            ctk.CTkLabel(
-                no_sessions_frame,
-                text="Click 'New Session' to start tracking your swimming",
-                font=("Helvetica", 14),
-                text_color="gray"
-            ).pack()
+            self.show_empty_state()
             return
         
-        for session in sessions:
+        for i, session in enumerate(sessions):
+            # Create session card with shadow effect
             session_frame = ctk.CTkFrame(
                 self.sessions_container,
-                fg_color=("gray90", "gray20"),
-                corner_radius=10
+                fg_color=("gray95", "gray20"),
+                corner_radius=15,
+                border_width=1,
+                border_color=("gray80", "gray35")
             )
-            session_frame.pack(fill="x", pady=5, padx=5)
+            session_frame.pack(fill="x", pady=8, padx=10)
+            session_frame.session_id = session.get('id')  # Store session ID in frame
+            
+            # Animated hover effect
+            def on_enter(e, frame=session_frame):
+                frame.configure(fg_color=("gray90", "gray25"))
+            
+            def on_leave(e, frame=session_frame):
+                frame.configure(fg_color=("gray95", "gray20"))
+            
+            session_frame.bind("<Enter>", on_enter)
+            session_frame.bind("<Leave>", on_leave)
             
             # Date and description
             date_label = ctk.CTkLabel(
@@ -247,13 +258,27 @@ class MainWindow(ctk.CTk):
         self.refresh_sessions_list()
 
     def delete_session(self, session_id):
-        """Delete a session"""
+        """Delete a session with visual feedback"""
         from tkinter import messagebox
+        import tkinter as tk
+        
+        def fade_out(frame, alpha=1.0):
+            if alpha > 0:
+                # Reduce opacity
+                frame.configure(fg_color=(f"gray{int(95*alpha)}", f"gray{int(20*alpha)}"))
+                self.after(20, lambda: fade_out(frame, alpha - 0.1))
+            else:
+                # Actually delete the session
+                db = Database()
+                if db.delete_session(session_id):
+                    self.refresh_sessions_list()
         
         if messagebox.askyesno("Delete Session", "Are you sure you want to delete this session?"):
-            db = Database()
-            if db.delete_session(session_id):
-                self.refresh_sessions_list()
+            # Find the session frame
+            for widget in self.sessions_container.winfo_children():
+                if hasattr(widget, 'session_id') and widget.session_id == session_id:
+                    fade_out(widget)
+                    break
 
     def export_data(self):
         """Export sessions data to CSV file"""
@@ -311,4 +336,49 @@ class MainWindow(ctk.CTk):
                 self.sessions_list.configure(state="normal")
                 self.sessions_list.insert("1.0", f"Error exporting data: {str(e)}\n{'-' * 40}\n\n")
                 self.sessions_list.configure(state="disabled")
+
+    def show_empty_state(self):
+        """Show enhanced empty state message"""
+        no_sessions_frame = ctk.CTkFrame(
+            self.sessions_container,
+            fg_color=("gray95", "gray20"),
+            corner_radius=15
+        )
+        no_sessions_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Swimming icon
+        icon_label = ctk.CTkLabel(
+            no_sessions_frame,
+            text="🏊",
+            font=("Helvetica", 48)
+        )
+        icon_label.pack(pady=(30, 10))
+        
+        # Title
+        title_label = ctk.CTkLabel(
+            no_sessions_frame,
+            text="No Swimming Sessions Yet",
+            font=("Helvetica", 20, "bold")
+        )
+        title_label.pack(pady=(0, 10))
+        
+        # Description
+        desc_label = ctk.CTkLabel(
+            no_sessions_frame,
+            text="Start tracking your swimming progress\nby adding your first session",
+            font=("Helvetica", 14),
+            text_color="gray"
+        )
+        desc_label.pack(pady=(0, 20))
+        
+        # Add session button
+        ctk.CTkButton(
+            no_sessions_frame,
+            text="➕ Add First Session",
+            command=self.open_new_session,
+            width=200,
+            height=40,
+            corner_radius=12,
+            hover_color=("gray75", "gray35")
+        ).pack(pady=(0, 30))
 
