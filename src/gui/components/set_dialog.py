@@ -10,7 +10,7 @@ class SetDialog(ctk.CTkToplevel):
         # Initialize variables
         self.result = None
         self.distance_var = ctk.StringVar(value="")
-        self.reps_var = ctk.StringVar(value="1")
+        self.reps_var = ctk.StringVar(value="1")  # Ensure default is "1"
         self.strokes = ["freestyle", "backstroke", "breaststroke", "butterfly", "mix"]
         self.stroke_var = ctk.StringVar(value=self.strokes[0])
         
@@ -77,7 +77,6 @@ class SetDialog(ctk.CTkToplevel):
             width=120
         )
         self.reps_entry.grid(row=1, column=0, sticky="w", padx=10, pady=(0, 15))
-        self.reps_entry.insert(0, "1")  # Default value
         
         # Distance input (mandatory)
         self.distance_label = ctk.CTkLabel(
@@ -181,7 +180,8 @@ class SetDialog(ctk.CTkToplevel):
             result = {
                 "distance": distance,
                 "repetitions": reps,
-                "stroke": self.stroke_var.get()
+                "stroke": self.stroke_var.get(),
+                "description": self.description_entry.get("1.0", "end-1c").strip()  # Add description
             }
             
             if result["stroke"] == "mix":

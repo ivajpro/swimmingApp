@@ -163,6 +163,7 @@ class MainWindow(ctk.CTk):
 
     def refresh_sessions_list(self):
         """Refresh the sessions list with enhanced display"""
+        # Clear existing sessions
         for widget in self.sessions_container.winfo_children():
             widget.destroy()
             
@@ -173,75 +174,70 @@ class MainWindow(ctk.CTk):
             self.show_empty_state()
             return
         
-        for i, session in enumerate(sessions):
-            # Create session card with shadow effect
+        for session in sessions:
+            # Create session card
             session_frame = ctk.CTkFrame(
                 self.sessions_container,
                 fg_color=("gray95", "gray20"),
-                corner_radius=15,
-                border_width=1,
-                border_color=("gray80", "gray35")
+                corner_radius=15
             )
             session_frame.pack(fill="x", pady=8, padx=10)
-            session_frame.session_id = session.get('id')  # Store session ID in frame
             
-            # Animated hover effect
-            def on_enter(e, frame=session_frame):
-                frame.configure(fg_color=("gray90", "gray25"))
+            # Header frame (date and buttons)
+            header_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
+            header_frame.pack(fill="x", padx=15, pady=(10, 0))
             
-            def on_leave(e, frame=session_frame):
-                frame.configure(fg_color=("gray95", "gray20"))
+            # Date and total info
+            date_text = f"📅 {session['date']}"
+            total_distance = f"🏊 {session['total_distance']}m total"
+            total_sets = f"📝 {len(session['sets'])} sets"
             
-            session_frame.bind("<Enter>", on_enter)
-            session_frame.bind("<Leave>", on_leave)
+            info_text = f"{date_text}  |  {total_distance}  |  {total_sets}"
             
-            # Date and description
-            date_label = ctk.CTkLabel(
-                session_frame,
-                text=session['date'],
+            header_label = ctk.CTkLabel(
+                header_frame,
+                text=info_text,
                 font=("Helvetica", 14, "bold")
             )
-            date_label.grid(row=0, column=0, sticky="w", padx=15, pady=(10, 0))
+            header_label.pack(side="left")
             
-            desc_label = ctk.CTkLabel(
-                session_frame,
-                text=session.get('description', 'No description'),
-                font=("Helvetica", 12)
-            )
-            desc_label.grid(row=1, column=0, sticky="w", padx=15, pady=(0, 10))
+            # Sets summary frame
+            sets_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
+            sets_frame.pack(fill="x", padx=15, pady=(5, 10))
             
-            # Stats summary
-            stats_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
-            stats_frame.grid(row=2, column=0, sticky="ew", padx=15, pady=(0, 10))
+            # Display set summaries
+            for i, set_data in enumerate(session['sets'], 1):
+                set_text = f"Set {i}: {set_data['repetitions']}x{set_data['distance']}m ({set_data['stroke']})"
+                if set_data.get('description'):
+                    set_text += f" - {set_data['description']}"
+                    
+                set_label = ctk.CTkLabel(
+                    sets_frame,
+                    text=set_text,
+                    font=("Helvetica", 12),
+                    justify="left",
+                    text_color=("gray40", "gray70")
+                )
+                set_label.pack(anchor="w", pady=2)
             
-            stats = [
-                f"🏊 {session.get('total_distance', 0)}m",
-                f"⏱️ {session.get('total_time', 0)}min",
-                f"🏆 {len(session.get('sets', []))} sets"
-            ]
+            # Actions frame
+            actions_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+            actions_frame.pack(side="right")
             
-            for i, stat in enumerate(stats):
-                ctk.CTkLabel(
-                    stats_frame,
-                    text=stat,
-                    font=("Helvetica", 12)
-                ).grid(row=0, column=i, padx=10)
-            
-            # Action buttons
-            btn_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
-            btn_frame.grid(row=0, column=1, rowspan=3, padx=10, pady=5)
-            
-            ctk.CTkButton(
-                btn_frame,
+            # Edit button
+            edit_btn = ctk.CTkButton(
+                actions_frame,
                 text="Edit",
                 width=60,
                 height=25,
                 corner_radius=8,
                 command=lambda s=session: self.edit_session(s)
-            ).pack(side="left", padx=2)
+            )
+            edit_btn.pack(side="left", padx=2)
             
-            ctk.CTkButton(
-                btn_frame,
+            # Delete button
+            delete_btn = ctk.CTkButton(
+                actions_frame,
                 text="×",
                 width=25,
                 height=25,
@@ -249,7 +245,8 @@ class MainWindow(ctk.CTk):
                 fg_color="red",
                 hover_color="darkred",
                 command=lambda sid=session.get('id'): self.delete_session(sid)
-            ).pack(side="left", padx=2)
+            )
+            delete_btn.pack(side="left", padx=2)
 
     def edit_session(self, session):
         """Open session for editing"""

@@ -71,11 +71,10 @@ class SessionWindow(ctk.CTkToplevel):
         )
         self.pool_selector.grid(row=3, column=0, sticky="ew", padx=10, pady=(0, 10))
         
-        # Sets frame
+        # Sets frame with fixed height
         self.sets_frame = ctk.CTkFrame(self.main_frame)
         self.sets_frame.grid(row=1, column=0, sticky="nsew", pady=(0, 20))
         self.sets_frame.grid_columnconfigure(0, weight=1)
-        self.sets_frame.grid_rowconfigure(1, weight=1)  # Make scrollable frame expandable
         
         # Sets label
         self.sets_label = ctk.CTkLabel(
@@ -85,19 +84,17 @@ class SessionWindow(ctk.CTkToplevel):
         )
         self.sets_label.grid(row=0, column=0, pady=10)
         
-        # Add scrollable frame for sets
-        self.sets_container = ctk.CTkScrollableFrame(
-            self.sets_frame,
-            height=300
-        )
+        # Create container frame for sets
+        self.sets_container = ctk.CTkFrame(self.sets_frame)
         self.sets_container.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
-        
-        # Add set button
+        self.sets_container.grid_columnconfigure(0, weight=1)
+
+        # Add set button below container
         self.add_set_btn = ctk.CTkButton(
             self.sets_frame,
-            text="Add Set",
+            text="➕ Add Set",
             command=self.add_set,
-            width=200  # Set fixed width
+            width=200
         )
         self.add_set_btn.grid(row=2, column=0, pady=10)
         
@@ -140,59 +137,60 @@ class SessionWindow(ctk.CTkToplevel):
             self.update_sets_display()
     
     def update_sets_display(self):
-        # Clear existing widgets
+        """Update the sets display"""
+        # Clear existing sets
         for widget in self.sets_container.winfo_children():
             widget.destroy()
         
-        # Change pack to grid for set display
+        # Check for empty sets list
+        if not self.sets:
+            # Show empty state
+            empty_label = ctk.CTkLabel(
+                self.sets_container,
+                text="No sets added yet",
+                text_color="gray"
+            )
+            empty_label.pack(pady=20)
+            return
+        
+        # Display sets
         for i, set_data in enumerate(self.sets, 1):
-            set_frame = ctk.CTkFrame(self.sets_container)
-            set_frame.grid(row=i-1, column=0, sticky="ew", padx=5, pady=2)
-            set_frame.grid_columnconfigure(0, weight=1)
+            set_frame = ctk.CTkFrame(
+                self.sets_container,
+                fg_color=("gray95", "gray20")
+            )
+            set_frame.pack(fill="x", pady=5, padx=5)
             
-            # Main set info
-            reps = set_data.get('repetitions', 1)
-            distance = set_data['distance']
-            total_distance = distance * reps
+            # Set info
+            label_text = f"Set {i}: {set_data['repetitions']}x{set_data['distance']}m ({set_data['stroke']})"
+            if set_data.get('description'):
+                label_text += f"\n{set_data['description']}"
             
-            if reps > 1:
-                label_text = (f"Set {i}: {reps}x{distance}m "
-                             f"({set_data['stroke']}) - "
-                             f"Total: {total_distance}m")
-            else:
-                label_text = (f"Set {i}: {distance}m "
-                             f"({set_data['stroke']})")
-            
-            if set_data.get('time'):
-                label_text += f" - {set_data['time']}s"
-            if set_data.get('rest'):
-                label_text += f" Rest: {set_data['rest']}s"
+            info_frame = ctk.CTkFrame(
+                set_frame,
+                fg_color="transparent"
+            )
+            info_frame.pack(fill="x", expand=True, side="left", padx=10, pady=5)
             
             set_label = ctk.CTkLabel(
-                set_frame,
+                info_frame,
                 text=label_text,
-                font=("Helvetica", 14)
+                font=("Helvetica", 12),
+                justify="left"
             )
-            set_label.grid(row=0, column=0, padx=5, pady=(5,0), sticky="w")
-            
-            # Description if present
-            if set_data.get('description'):
-                desc_label = ctk.CTkLabel(
-                    set_frame,
-                    text=f"Note: {set_data['description']}",
-                    font=("Helvetica", 12, "italic"),
-                    text_color="gray"
-                )
-                desc_label.grid(row=1, column=0, padx=25, pady=(0,5), sticky="w")
+            set_label.pack(anchor="w")
             
             # Delete button
             delete_btn = ctk.CTkButton(
                 set_frame,
                 text="×",
                 width=30,
-                command=lambda idx=i-1: self.delete_set(idx)
+                height=25,
+                command=lambda idx=i-1: self.delete_set(idx),
+                fg_color="red",
+                hover_color="darkred"
             )
-            delete_btn.grid(row=0, column=1, padx=5, pady=5)
+            delete_btn.pack(side="right", padx=5, pady=5)
     
     def delete_set(self, index):
         del self.sets[index]
