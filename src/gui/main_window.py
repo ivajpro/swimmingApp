@@ -187,6 +187,10 @@ class MainWindow(ctk.CTk):
             header_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
             header_frame.pack(fill="x", padx=15, pady=(10, 0))
             
+            # Left side info frame
+            left_info_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+            left_info_frame.pack(side="left")
+            
             # Date and total info
             date_text = f"📅 {session['date']}"
             total_distance = f"🏊 {session['total_distance']}m total"
@@ -195,11 +199,67 @@ class MainWindow(ctk.CTk):
             info_text = f"{date_text}  |  {total_distance}  |  {total_sets}"
             
             header_label = ctk.CTkLabel(
-                header_frame,
+                left_info_frame,
                 text=info_text,
                 font=("Helvetica", 14, "bold")
             )
             header_label.pack(side="left")
+            
+            # Notes icon with tooltip (if notes exist)
+            if session.get('notes'):
+                notes_frame = ctk.CTkFrame(left_info_frame, fg_color="transparent")
+                notes_frame.pack(side="left", padx=(10, 0))
+                
+                notes_label = ctk.CTkLabel(
+                    notes_frame,
+                    text="📌",
+                    font=("Helvetica", 14),
+                    cursor="hand2"
+                )
+                notes_label.pack()
+                
+                # Create tooltip functionality
+                def show_tooltip(event, notes_text):
+                    tooltip = ctk.CTkToplevel()
+                    tooltip.wm_overrideredirect(True)
+                    tooltip.wm_geometry(f"+{event.x_root+10}+{event.y_root+10}")
+                    
+                    # Add padding and style
+                    padding_frame = ctk.CTkFrame(
+                        tooltip,
+                        fg_color=("gray90", "gray20"),
+                        corner_radius=8
+                    )
+                    padding_frame.pack(padx=2, pady=2)
+                    
+                    note_label = ctk.CTkLabel(
+                        padding_frame,
+                        text=notes_text,
+                        font=("Helvetica", 12),
+                        wraplength=300
+                    )
+                    note_label.pack(padx=10, pady=5)
+                    
+                    return tooltip
+                
+                def hide_tooltip(event, tooltip):
+                    if tooltip:
+                        tooltip.destroy()
+                
+                tooltip = None
+                
+                def on_enter(event):
+                    nonlocal tooltip
+                    tooltip = show_tooltip(event, session['notes'])
+                
+                def on_leave(event):
+                    nonlocal tooltip
+                    if tooltip:
+                        hide_tooltip(event, tooltip)
+                        tooltip = None
+                
+                notes_label.bind("<Enter>", on_enter)
+                notes_label.bind("<Leave>", on_leave)
             
             # Sets summary frame
             sets_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
