@@ -1,6 +1,7 @@
 import sys
 import os
 import customtkinter as ctk
+from src.data.database import Database
 
 # Add the project root directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,8 +13,11 @@ def main():
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("blue")
     
-    # Create main window
-    app = MainWindow()
+    # Initialize database
+    db = Database()
+    
+    # Create main window with database instance
+    app = MainWindow(db)
     app.mainloop()
 
 if __name__ == "__main__":

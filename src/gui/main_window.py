@@ -4,8 +4,9 @@ from src.gui.session_window import SessionWindow  # Update to absolute import
 from src.utils.database import Database
 
 class MainWindow(ctk.CTk):
-    def __init__(self):
+    def __init__(self, db):
         super().__init__()
+        self.db = db
         
         # Enhanced window properties
         self.title("🏊 Swimming Training Tracker")
@@ -438,4 +439,25 @@ class MainWindow(ctk.CTk):
             corner_radius=12,
             hover_color=("gray75", "gray35")
         ).pack(pady=(0, 30))
+
+    def save_session(self):
+        """Save current session to database"""
+        try:
+            duration = int(self.duration_entry.get())
+            distance = float(self.distance_entry.get())
+            stroke_type = self.stroke_type_combo.get()
+            notes = self.notes_text.get("1.0", "end-1c")
+            
+            self.db.add_session(duration, distance, stroke_type, notes)
+            self.show_success_message("Session saved successfully!")
+        except ValueError:
+            self.show_error_message("Please enter valid numbers for duration and distance")
+
+    def show_success_message(self, message):
+        """Show success message to user"""
+        ctk.messagebox.showinfo("Success", message)
+
+    def show_error_message(self, message):
+        """Show error message to user"""
+        ctk.messagebox.showerror("Error", message)
 
