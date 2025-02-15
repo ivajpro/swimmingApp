@@ -180,9 +180,26 @@ class SessionWindow(ctk.CTkToplevel):
             )
             set_label.pack(anchor="w")
             
+            # Buttons frame
+            buttons_frame = ctk.CTkFrame(
+                set_frame,
+                fg_color="transparent"
+            )
+            buttons_frame.pack(side="right", padx=5, pady=5)
+            
+            # Edit button
+            edit_btn = ctk.CTkButton(
+                buttons_frame,
+                text="✎",
+                width=30,
+                height=25,
+                command=lambda idx=i-1: self.edit_set(idx)
+            )
+            edit_btn.pack(side="left", padx=2)
+            
             # Delete button
             delete_btn = ctk.CTkButton(
-                set_frame,
+                buttons_frame,
                 text="×",
                 width=30,
                 height=25,
@@ -190,11 +207,21 @@ class SessionWindow(ctk.CTkToplevel):
                 fg_color="red",
                 hover_color="darkred"
             )
-            delete_btn.pack(side="right", padx=5, pady=5)
+            delete_btn.pack(side="left", padx=2)
     
     def delete_set(self, index):
         del self.sets[index]
         self.update_sets_display()
+    
+    def edit_set(self, index):
+        """Edit an existing set"""
+        current_set = self.sets[index]
+        dialog = SetDialog(self, edit_data=current_set)  # Pass existing set data
+        self.wait_window(dialog)
+        
+        if dialog.result:
+            self.sets[index] = dialog.result  # Replace the set with edited data
+            self.update_sets_display()
     
     def save_session(self):
         """Save new or update existing session"""

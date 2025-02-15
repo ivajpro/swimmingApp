@@ -1,11 +1,12 @@
 import customtkinter as ctk
 
 class SetDialog(ctk.CTkToplevel):
-    def __init__(self, parent):
+    def __init__(self, parent, edit_data=None):
         super().__init__(parent)
-        self.title("Add Set")
+        self.title("Edit Set" if edit_data else "New Set")
         self.geometry("400x600")
         self.minsize(300, 400)
+        self.resizable(False, False)
         
         # Initialize variables
         self.result = None
@@ -55,6 +56,16 @@ class SetDialog(ctk.CTkToplevel):
         
         self.setup_ui()
         self.grab_set()
+        
+        # Initialize with edit data if provided
+        if edit_data:
+            self.distance_entry.insert(0, str(edit_data['distance']))
+            self.reps_entry.insert(0, str(edit_data['repetitions']))
+            self.stroke_var.set(edit_data['stroke'])
+            if 'time' in edit_data:
+                self.time_entry.insert(0, str(edit_data['time']))
+            if 'description' in edit_data:
+                self.description_entry.insert("1.0", edit_data['description'])
     
     def setup_ui(self):
         # Main container
