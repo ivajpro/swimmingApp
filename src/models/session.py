@@ -23,7 +23,7 @@ class SwimmingSet:
 class Session:
     date: datetime
     pool_length: int
-    sets: List<SwimmingSet> # type: ignore
+    sets: List[SwimmingSet]  # Fixed from List<SwimmingSet>
     notes: Optional[str] = None
     
     @property
@@ -39,4 +39,20 @@ class Session:
         if self.total_distance == 0:
             return 0
         return self.total_time / (self.total_distance / 100)  # seconds per 100m
+
+    @property
+    def total_rest_time(self) -> int:
+        return sum(s.rest_interval for s in self.sets)
+    
+    @property
+    def effective_swim_time(self) -> int:
+        return self.total_time - self.total_rest_time
+    
+    @property
+    def calories_burned(self) -> float:
+        # Approximate calculation based on MET values
+        MET = 6.0  # Moderate swimming
+        WEIGHT = 70  # Default weight in kg, could be made configurable
+        hours = self.effective_swim_time / 3600
+        return MET * WEIGHT * hours
 
